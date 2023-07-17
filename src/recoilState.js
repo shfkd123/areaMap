@@ -14,8 +14,3 @@ export const region = atom({
   key: "region",
   default: [],
 });
-
-// export const polygonValue = atom({
-//   key: "polygonValue",
-//   default: [],
-// });
