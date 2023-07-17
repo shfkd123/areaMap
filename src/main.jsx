@@ -4,11 +4,14 @@ import { BrowserRouter } from "react-router-dom";
 import { ChakraProvider } from "@chakra-ui/react";
 import Router from "./Router";
 import theme from "./styles/theme";
+import { RecoilRoot } from "recoil";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
-    <BrowserRouter>
-      <Router />
-    </BrowserRouter>
+    <RecoilRoot>
+      <BrowserRouter>
+        <Router />
+      </BrowserRouter>
+    </RecoilRoot>
   </ChakraProvider>
 );

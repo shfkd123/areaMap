@@ -1,10 +1,14 @@
 import React from "react";
 import { Button, Select, Flex } from "@chakra-ui/react";
+import { useSetRecoilState } from "recoil";
+import { isSiDoRecoil, isSiGunGuRecoil } from "../recoilState";
 
 const SelectButton = (props) => {
   const data = props.jsonData.data;
   const SiDoData = [];
   const SiGunGuData = [];
+  const setIsSiDo = useSetRecoilState(isSiDoRecoil);
+  const setIsSiGunGu = useSetRecoilState(isSiGunGuRecoil);
 
   for (let i in data) {
     if (data[i].type) {
@@ -29,7 +33,7 @@ const SelectButton = (props) => {
       {props.isSiDo && (
         <Select
           onChange={(e) => {
-            props.setisSiGunGu(true);
+            setIsSiGunGu(true);
             props.selectSiDo(e); //시, 도 선택함수 실행
           }}
         >
@@ -62,7 +66,7 @@ const SelectButton = (props) => {
       <Button
         variant="btnAttr"
         onClick={() => {
-          props.setisSiDo((prev) => !prev);
+          setIsSiDo((prev) => !prev);
         }}
       >
         지역선택
