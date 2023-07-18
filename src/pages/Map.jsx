@@ -61,10 +61,26 @@ const Map = () => {
   };
 
   useEffect(() => {
-    const filteredData = regionData?.filter((data) => {
-      if (isSiDo && data.code === isSiDo) {
+    const filterData = regionData?.filter((data) => {
+      if (
+        isSiDo &&
+        !isSiGunGu &&
+        data.code === isSiDo &&
+        data.type === "sido"
+      ) {
         return true;
-      } else if (isSiDo && isSiGunGu && data.code === isSiGunGu) {
+      } else if (
+        isSiGunGu === "0000" &&
+        data.parent === isSiDo &&
+        data.type === "sigungu"
+      ) {
+        return true;
+      } else if (
+        isSiDo &&
+        isSiGunGu &&
+        data.code === isSiGunGu &&
+        data.parent === isSiDo
+      ) {
         return true;
       } else if (!isSiDo && !isSiGunGu && data.parent === "00") {
         return true;
@@ -72,14 +88,14 @@ const Map = () => {
       return false;
     });
 
-    polygonDraw(filteredData);
+    polygonDraw(filterData);
   }, [regionData, isSiDo, isSiGunGu]);
 
   const polygonDraw = useCallback(
-    (filteredData) => {
+    (filterData) => {
       let newPath = [];
 
-      filteredData.map((item) => {
+      filterData.map((item) => {
         const { polygon } = item;
         const jsonData = JSON.parse(polygon);
         const jsonDataValue = Object.values(jsonData);
@@ -87,12 +103,12 @@ const Map = () => {
         // if (isSiDo !== "28" || isSiDo !== "46") { //인천 : 28 / 전라남도 : 46
         if (isSiDo && !isSiGunGu) {
           mapRef.current.panTo(jsonDataValue[jsonDataValue.length - 1]);
-          mapRef.current.setCenter(jsonDataValue[0]);
+          //mapRef.current.setCenter(jsonDataValue[0]);
           mapRef.current.setZoom(9);
         } else if (isSiDo && isSiGunGu) {
           mapRef.current.panTo(jsonDataValue[jsonDataValue.length - 1]);
-          mapRef.current.setCenter(jsonDataValue[jsonDataValue[0]]);
-          mapRef.current.setZoom(12);
+          mapRef.current.setCenter(jsonDataValue[0]);
+          mapRef.current.setZoom(11);
         }
         // }
         newPath = jsonDataValue.map(
@@ -102,9 +118,9 @@ const Map = () => {
         new naver.maps.Polygon({
           map: mapRef.current,
           paths: newPath,
-          // fillColor: "#fff",
+          fillColor: "#FF4800",
           fillOpacity: 0.3,
-          strokeColor: "#FF4800",
+          strokeColor: "#fff",
           strokeOpacity: 0.6,
           strokeWeight: 3,
           clickable: true,
@@ -163,18 +179,32 @@ const Map = () => {
 
               <Box w="300px" h="150px" overflowY="scroll" overflowX="hidden">
                 <UnorderedList w="100%" m="5px">
-                  {regionData
-                    ?.filter((data) => data.type === "sido")
-                    .map((data) => (
-                      <ListItem
-                        key={data.code}
-                        w="50%"
-                        display="inline-block"
-                        borderBottom="1px solid lightgray"
-                      >
+                  <ListItem
+                    w="100%"
+                    display="inline-block"
+                    borderBottom="1px solid lightgray"
+                  >
+                    <Button
+                      h="15px"
+                      w="45%"
+                      m="2.5px"
+                      bg={isSiDo === "00" ? "#A6DBFA" : "white"}
+                      fontWeight="500"
+                      onClick={() => {
+                        setIsSiDo("");
+                        setIsSiGunGu("");
+                      }}
+                    >
+                      전체
+                    </Button>
+                    {regionData
+                      ?.filter((data) => data.type === "sido")
+                      .map((data) => (
                         <Button
+                          key={data.code}
                           h="15px"
-                          w="90%"
+                          w="45%"
+                          m="2.5px"
                           bg={isSiDo === data.code ? "#A6DBFA" : "white"}
                           fontWeight="500"
                           onClick={() => {
@@ -184,8 +214,8 @@ const Map = () => {
                         >
                           {data.name}
                         </Button>
-                      </ListItem>
-                    ))}
+                      ))}
+                  </ListItem>
                 </UnorderedList>
               </Box>
             </Box>
@@ -200,21 +230,37 @@ const Map = () => {
               </Box>
               <Box w="400px" h="150px" overflowY="scroll" overflowX="hidden">
                 <UnorderedList w="100%" m="5px">
-                  {regionData
-                    ?.filter(
-                      (data) =>
-                        data.type === "sigungu" && data.parent === isSiDo
-                    )
-                    .map((data) => (
-                      <ListItem
-                        key={data.code}
-                        w="50%"
-                        display="inline-block"
-                        borderBottom="1px solid lightgray"
-                      >
+                  <ListItem
+                    w="100%"
+                    display="inline-block"
+                    borderBottom="1px solid lightgray"
+                  >
+                    <Button
+                      h="15px"
+                      w="45%"
+                      m="2.5px"
+                      bg="white"
+                      fontWeight="500"
+                      onClick={() => {
+                        setIsSiDo((prev) => prev);
+                        isSiDo ? setIsSiGunGu("0000") : setIsSiGunGu("");
+                      }}
+                    >
+                      {isSiDo === "00" || isSiDo === ""
+                        ? "시/도를 선택하세요"
+                        : "전체"}
+                    </Button>
+                    {regionData
+                      ?.filter(
+                        (data) =>
+                          data.type === "sigungu" && data.parent === isSiDo
+                      )
+                      .map((data) => (
                         <Button
+                          key={data.code}
                           h="15px"
-                          w="90%"
+                          w="45%"
+                          m="2.5px"
                           bg={isSiGunGu === data.code ? "#A6DBFA" : "white"}
                           fontWeight="500"
                           onClick={() => {
@@ -226,8 +272,8 @@ const Map = () => {
                         >
                           {data.name}
                         </Button>
-                      </ListItem>
-                    ))}
+                      ))}
+                  </ListItem>
                 </UnorderedList>
               </Box>
             </Box>
