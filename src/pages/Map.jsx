@@ -9,17 +9,34 @@ import {
 } from "@chakra-ui/react";
 import axios from "axios";
 import { useRecoilValue } from "recoil";
-import { isSiDoRecoil, isSiGunGuRecoil, region } from "../recoilState";
+import {
+  isSiDoRecoil,
+  isSiGunGuRecoil,
+  // isSiDoRecoil2,
+  // isSiGunGuRecoil2,
+  // isSiDoRecoil3,
+  // isSiGunGuRecoil3,
+  region,
+} from "../recoilState";
 
 const Map = () => {
   const [isSiDo, setIsSiDo] = useState(useRecoilValue(isSiDoRecoil));
   const [isSiGunGu, setIsSiGunGu] = useState(useRecoilValue(isSiGunGuRecoil));
+  // const [isSiDo2, setIsSiDo2] = useState(useRecoilValue(isSiDoRecoil2));
+  // const [isSiGunGu2, setIsSiGunGu2] = useState(
+  //   useRecoilValue(isSiGunGuRecoil2)
+  // );
+  // const [isSiDo3, setIsSiDo3] = useState(useRecoilValue(isSiDoRecoil3));
+  // const [isSiGunGu3, setIsSiGunGu3] = useState(
+  //   useRecoilValue(isSiGunGuRecoil3)
+  // );
   const [regionData, setRegionData] = useState(useRecoilValue(region));
   const [isOpenSelectBox, setIsOpenSelectBox] = useState(false);
   const [isOpenSelectBox2, setIsOpenSelectBox2] = useState(false);
   const [isOpenSelectBox3, setIsOpenSelectBox3] = useState(false);
   const [bgColor, setBgColor] = useState("white");
   const mapRef = useRef(null);
+  const markerRef = useRef([]);
   const { naver } = window;
 
   useEffect(() => {
@@ -61,6 +78,11 @@ const Map = () => {
   };
 
   useEffect(() => {
+    const filterData = filterDataCondition(isSiDo, isSiGunGu);
+    polygonDraw(filterData);
+  }, [regionData, isSiDo, isSiGunGu]);
+
+  const filterDataCondition = (isSiDo, isSiGunGu) => {
     const filterData = regionData?.filter((data) => {
       if (
         isSiDo &&
@@ -87,9 +109,8 @@ const Map = () => {
       }
       return false;
     });
-
-    polygonDraw(filterData);
-  }, [regionData, isSiDo, isSiGunGu]);
+    return filterData;
+  };
 
   const polygonDraw = useCallback(
     (filterData) => {
@@ -101,35 +122,106 @@ const Map = () => {
         const jsonDataValue = Object.values(jsonData);
 
         // if (isSiDo !== "28" || isSiDo !== "46") { //인천 : 28 / 전라남도 : 46
-        if (isSiDo && !isSiGunGu) {
-          mapRef.current.panTo(jsonDataValue[jsonDataValue.length - 1]);
-          //mapRef.current.setCenter(jsonDataValue[0]);
-          mapRef.current.setZoom(9);
-        } else if (isSiDo && isSiGunGu) {
-          mapRef.current.panTo(jsonDataValue[jsonDataValue.length - 1]);
-          mapRef.current.setCenter(jsonDataValue[0]);
-          mapRef.current.setZoom(11);
-        }
+
         // }
         newPath = jsonDataValue.map(
           (json) => new naver.maps.LatLng(json[1], json[0])
         );
 
-        new naver.maps.Polygon({
+        const polyGon = new naver.maps.Polygon({
           map: mapRef.current,
           paths: newPath,
-          fillColor: "#FF4800",
-          fillOpacity: 0.3,
-          strokeColor: "#fff",
+          // fillColor: "#",
+          // fillOpacity: 0.3,
+          strokeColor: "#FF4800",
           strokeOpacity: 0.6,
           strokeWeight: 3,
           clickable: true,
         });
 
-        // mapRef.current.addListener("mouseover", function (e) {
-        //   console.log(e);
-        //   console.log(item.name);
-        // });
+        const centerValueY =
+          (Object.values(polyGon.getBounds()._min)[0] +
+            Object.values(polyGon.getBounds()._max)[0]) /
+          2;
+        const centerValueX =
+          (Object.values(polyGon.getBounds()._min)[2] +
+            Object.values(polyGon.getBounds()._max)[2]) /
+          2;
+
+        const centerLatLng = new naver.maps.LatLng(centerValueY, centerValueX);
+
+        if (isSiDo && !isSiGunGu) {
+          mapRef.current.panTo(centerLatLng);
+          mapRef.current.setCenter(centerLatLng);
+          mapRef.current.setZoom(9);
+        } else if (isSiDo && isSiGunGu) {
+          mapRef.current.panTo(centerLatLng);
+          mapRef.current.setCenter(centerLatLng);
+          mapRef.current.setZoom(11);
+        }
+
+        naver.maps.Event.addListener(polyGon, "mouseover", function () {
+          polyGon.setOptions({
+            fillColor: "#FF4800",
+            fillOpacity: 0.3,
+            // strokeColor: "#fff",
+            // strokeOpacity: 0.6,
+          });
+
+          const marker = new naver.maps.Marker({
+            map: mapRef.current,
+            position: centerLatLng,
+            icon: {
+              content: `<button style="font-size:1.3rem; font-weight: 600;">${item.name}</button>`,
+              size: new naver.maps.Size(100, 100),
+              anchor: new naver.maps.Point(20, 40),
+            },
+          });
+
+          markerRef.current.push(marker);
+        });
+
+        naver.maps.Event.addListener(polyGon, "mouseout", function () {
+          markerRef.current.forEach((marker) => marker.setMap(null));
+          markerRef.current = [];
+          polyGon.setOptions({
+            fillOpacity: 0,
+            strokeColor: "#FF4800",
+            strokeOpacity: 0.6,
+            strokeWeight: 3,
+            clickable: true,
+          });
+        });
+
+        naver.maps.Event.addListener(polyGon, "click", function () {
+          // console.log(item.code);
+          //setIsSiDo(item.code);
+
+          const centerValueY =
+            (Object.values(polyGon.getBounds()._min)[0] +
+              Object.values(polyGon.getBounds()._max)[0]) /
+            2;
+          const centerValueX =
+            (Object.values(polyGon.getBounds()._min)[2] +
+              Object.values(polyGon.getBounds()._max)[2]) /
+            2;
+
+          const centerLatLng = new naver.maps.LatLng(
+            centerValueY,
+            centerValueX
+          );
+
+          mapRef.current.panTo(centerLatLng);
+          mapRef.current.setCenter(centerLatLng);
+          mapRef.current.setZoom(9);
+
+          polyGon.setOptions({
+            fillColor: "#7ED957",
+            fillOpacity: 0.3,
+            strokeColor: "#fff",
+            strokeOpacity: 0.1,
+          });
+        });
       });
     },
     [regionData, isSiDo, isSiGunGu]
